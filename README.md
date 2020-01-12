@@ -1,6 +1,10 @@
 # The Lampster - Bluetooth Control Protocol
 
-I bought a so called Lampster a couple of years ago in a Kickstarter campaign and it finally arrived. The Lampster is a small scultpture with a lamp as its head. The lamp itself if great, but the app to control the lampster is really bad in terms of usability. 
+I bought a so called Lampster a couple of years ago in a Kickstarter campaign and it finally arrived. The Lampster is a small scultpture with a lamp as its head.
+
+![The Lampster](lampster.jpg)
+
+The lamp itself if great, but the app to control the lampster is really bad in terms of usability. 
 
 I reverse engineered the protocol so I can control the lampster using a Raspberry Pi and probably write my own smart home integration later.
 
