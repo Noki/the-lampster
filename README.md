@@ -80,3 +80,50 @@ char-write-cmd 0x002a 000001 | BLUE lowest intensity
 char-write-cmd 0x002a 000064 | BLUE highest intensity
 char-write-cmd 0x002a 1E1E1E | all 30% intensity
 char-write-cmd 0x002a 646464 | all full intensity
+
+## More details
+
+Found while building a Home Assistant integration, by reading the values and notifications the lamp sends. Observed on a Lampster with model "LA-2017B", firmware "10" and hardware "100B".
+
+### The mode value is a bit field
+
+Bit 0x80 is power and bit 0x20 selects RGB (otherwise white), so 0x28 is "RGB mode, switched off".
+
+value | meaning
+--- | ---
+c8 | white mode, on
+a8 | RGB mode, on
+48 | white mode, off
+28 | RGB mode, off
+c0 / 40 | on / off without a mode bit
+
+- Writing c0 while the lamp is already on is rejected (Write Not Permitted).
+- Mode writes are also rejected while a previous mode change is still being processed; trying again after about half a second works.
+
+### Reading and notifications
+
+- The mode, white and RGB values can all be read (char-read-hnd), including while the lamp is off.
+- All three also support notifications. The lamp notifies changes made with the touch button, but not changes written over Bluetooth.
+- When the touch button changes the mode, only the mode is notified, not the white or RGB values.
+
+### Touch button
+
+- A short tap turns the lamp off by clearing only the power bit (c8 to 48, a8 to 28). The next tap sets it again, so the lamp comes back in the same mode with the same values.
+- A slightly longer press is the start of a hold. In RGB mode a hold first switches to white (c8).
+- Holding the button changes both white values by one step at a time, about ten steps per second, and each hold goes the other way from the last. Dimming stops when the lower of the two values reaches 1; brightening stops when the higher one reaches 100. Both values move by the same amount, so the color temperature shifts during a hold.
+
+### Other characteristics
+
+UUIDs as listed by bleak on Windows. Its handles are one lower than the ones gatttool uses above (0x0020, 0x0024 and 0x0029 for mode, white and RGB).
+
+UUID | properties | content
+--- | --- | ---
+01ff5554-ba5e-f4ee-5ca1-eb1e5e4b1ce0 | read, write, notify | mode
+01ff5556-ba5e-f4ee-5ca1-eb1e5e4b1ce0 | read, write, notify | white (WWCC)
+01ff5559-ba5e-f4ee-5ca1-eb1e5e4b1ce0 | read, write, notify | RGB (RRGGBB)
+00002a6e-0000-1000-8000-00805f9b34fb | read, notify | temperature, signed 16 bit, 0.01 °C, notified about every 5 seconds
+00002a26 / 00002a27 | read | firmware and hardware revision
+01ff5560-ba5e-f4ee-5ca1-eb1e5e4b1ce0 | read, notify | unknown, reads about 3300 (perhaps a voltage in mV)
+01ff5561 / 01ff5562 | read, write, notify | unknown, 4 bytes, zero
+01ff5563 | read, write | unknown, 1 byte
+01ff5551 / 01ff5552 (service 01ff5550) | indicate and write / write without response | unknown
